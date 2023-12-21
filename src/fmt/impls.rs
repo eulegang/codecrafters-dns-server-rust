@@ -1,4 +1,4 @@
-use super::{Header, Side};
+use super::{Header, Name, Side};
 
 const NULL_MASK: u16 = 0x0000;
 const QR_MASK: u16 = 0x8000;
@@ -56,5 +56,22 @@ impl Header {
 
     pub fn rcode(&self) -> u8 {
         (self.block & RCODE) as u8
+    }
+}
+
+impl std::fmt::Debug for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut res = String::new();
+
+        for name in &self.name {
+            let Ok(name) = std::str::from_utf8(&name) else {
+                return self.name.fmt(f);
+            };
+
+            res.push_str(name);
+            res.push('.');
+        }
+
+        res.fmt(f)
     }
 }

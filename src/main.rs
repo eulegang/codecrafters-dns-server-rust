@@ -38,6 +38,8 @@ async fn main() {
                         continue 'conn;
                     };
 
+                    dbg!(&q);
+
                     body = b;
                     questions.push(q);
                 }

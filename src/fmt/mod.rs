@@ -22,11 +22,12 @@ pub enum Side {
     Response,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct Name {
     name: Vec<Vec<u8>>,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Type {
     A,
     NS,
@@ -46,10 +47,12 @@ pub enum Type {
     TXT,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Class {
     In,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Question {
     pub name: Name,
     pub ty: Type,
