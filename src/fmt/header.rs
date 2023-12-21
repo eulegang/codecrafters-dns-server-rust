@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use nom::IResult;
 
 #[derive(Default)]
@@ -12,6 +10,12 @@ pub struct Header {
     pub ar_count: u16,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Side {
+    Query = 0,
+    Response = 1,
+}
+
 const NULL_MASK: u16 = 0x0000;
 const QR_MASK: u16 = 0x8000;
 const OP_MASK: u16 = 0x7800;
@@ -21,12 +25,19 @@ const RD_MASK: u16 = 0x0100;
 const RA_MASK: u16 = 0x0080;
 
 impl Header {
-    pub fn query(&self) -> bool {
-        self.block & QR_MASK == 0
+    pub fn side(&self) -> Side {
+        if self.block & QR_MASK == 0 {
+            Side::Query
+        } else {
+            Side::Response
+        }
     }
 
-    pub fn set_query(&mut self, query: bool) {
-        let s = if !query { QR_MASK } else { NULL_MASK };
+    pub fn set_side(&mut self, side: Side) {
+        let s = match side {
+            Side::Query => NULL_MASK,
+            Side::Response => QR_MASK,
+        };
 
         self.block &= !QR_MASK;
         self.block |= s

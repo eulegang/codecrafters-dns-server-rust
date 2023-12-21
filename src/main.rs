@@ -31,7 +31,7 @@ async fn main() {
 
                 let mut header = fmt::Header::default();
                 header.id = req_header.id;
-                header.set_query(false);
+                header.set_side(fmt::Side::Response);
 
                 let len = header.write_to(&mut out_buf);
 
