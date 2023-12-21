@@ -70,8 +70,6 @@ async fn main() {
                     a.encode(&mut out_buf);
                 }
 
-                eprintln!("{:02X?}", out_buf);
-
                 udp_socket
                     .send_to(&out_buf, source)
                     .await
