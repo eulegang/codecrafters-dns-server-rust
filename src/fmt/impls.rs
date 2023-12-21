@@ -52,8 +52,20 @@ impl Header {
         self.block & RD_MASK != 0
     }
 
+    pub fn set_recursion_desired(&mut self, desired: bool) {
+        self.block &= !RD_MASK;
+        if desired {
+            self.block |= RD_MASK
+        }
+    }
+
     pub fn recursion_available(&self) -> bool {
         self.block & RA_MASK != 0
+    }
+
+    pub fn set_rcode(&mut self, rcode: u8) {
+        self.block &= !RCODE;
+        self.block |= rcode as u16 & RCODE;
     }
 
     pub fn rcode(&self) -> u8 {

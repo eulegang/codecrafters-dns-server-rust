@@ -48,7 +48,13 @@ async fn main() {
                 header.id = req_header.id;
                 header.qd_count = req_header.qd_count;
                 header.an_count = 1;
+
+                header.set_opcode(req_header.opcode());
                 header.set_side(fmt::Side::Response);
+
+                if req_header.opcode() != 0 {
+                    header.set_rcode(4);
+                }
 
                 header.encode(&mut out_buf);
 
