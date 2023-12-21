@@ -21,9 +21,16 @@ async fn main() {
         match udp_socket.recv_from(&mut in_buf).await {
             Ok((size, source)) => {
                 eprintln!("Received {} bytes from {}", size, source);
-                let _bytes = &in_buf[0..size];
+                let bytes = &in_buf[0..size];
+
+                let Ok((body, req_header)) = fmt::Header::parse(bytes) else {
+                    eprintln!("malformed request header");
+
+                    continue;
+                };
 
                 let mut header = fmt::Header::default();
+                header.id = req_header.id;
                 header.set_query(false);
 
                 let len = header.write_to(&mut out_buf);
