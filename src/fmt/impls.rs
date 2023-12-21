@@ -1,4 +1,6 @@
-use super::{Header, Name, Side};
+use std::net::Ipv4Addr;
+
+use super::{Header, Name, RData, Side};
 
 const NULL_MASK: u16 = 0x0000;
 const QR_MASK: u16 = 0x8000;
@@ -73,5 +75,11 @@ impl std::fmt::Debug for Name {
         }
 
         res.fmt(f)
+    }
+}
+
+impl From<Ipv4Addr> for RData {
+    fn from(value: Ipv4Addr) -> Self {
+        RData(value.octets().to_vec())
     }
 }

@@ -166,3 +166,47 @@ impl Bincode for Class {
         Ok((input, class))
     }
 }
+
+impl Bincode for Resource {
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.name.encode(buf);
+        self.ty.encode(buf);
+        self.class.encode(buf);
+        buf.extend(self.ttl.to_be_bytes());
+        self.data.encode(buf);
+    }
+
+    fn decode(buf: &[u8]) -> nom::IResult<&[u8], Self> {
+        let (buf, name) = Name::decode(buf)?;
+        let (buf, ty) = Type::decode(buf)?;
+        let (buf, class) = Class::decode(buf)?;
+        let (buf, ttl) = nom::number::streaming::u32(Endianness::Big)(buf)?;
+        let (buf, data) = RData::decode(buf)?;
+
+        Ok((
+            buf,
+            Resource {
+                name,
+                ty,
+                class,
+                ttl,
+                data,
+            },
+        ))
+    }
+}
+
+impl Bincode for RData {
+    fn encode(&self, buf: &mut Vec<u8>) {
+        let len = self.0.len() as u16;
+        buf.extend(len.to_be_bytes());
+        buf.extend(&self.0);
+    }
+
+    fn decode(buf: &[u8]) -> nom::IResult<&[u8], Self> {
+        let (buf, len) = word(buf)?;
+        let (buf, data) = take(len)(buf)?;
+
+        Ok((buf, RData(data.to_vec())))
+    }
+}

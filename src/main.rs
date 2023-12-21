@@ -1,6 +1,8 @@
 // Uncomment this block to pass the first stage
 // use std::net::UdpSocket;
 
+use std::net::Ipv4Addr;
+
 use tokio::net::UdpSocket;
 
 use fmt::Bincode;
@@ -45,12 +47,30 @@ async fn main() {
                 let mut header = fmt::Header::default();
                 header.id = req_header.id;
                 header.qd_count = req_header.qd_count;
+                header.an_count = 1;
                 header.set_side(fmt::Side::Response);
 
                 header.encode(&mut out_buf);
+
+                let mut answers = Vec::new();
+
                 for q in questions {
                     q.encode(&mut out_buf);
+
+                    answers.push(fmt::Resource {
+                        name: q.name.clone(),
+                        ty: q.ty,
+                        class: q.class,
+                        ttl: 60,
+                        data: Ipv4Addr::from([8, 8, 8, 8]).into(),
+                    });
                 }
+
+                for a in answers {
+                    a.encode(&mut out_buf);
+                }
+
+                eprintln!("{:02X?}", out_buf);
 
                 udp_socket
                     .send_to(&out_buf, source)

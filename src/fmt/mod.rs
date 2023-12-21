@@ -6,7 +6,7 @@ pub trait Bincode: Sized {
     fn decode(buf: &[u8]) -> nom::IResult<&[u8], Self>;
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct Header {
     pub id: u16,
     pub block: u16,
@@ -22,7 +22,7 @@ pub enum Side {
     Response,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct Name {
     name: Vec<Vec<u8>>,
 }
@@ -52,9 +52,21 @@ pub enum Class {
     In,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Question {
     pub name: Name,
     pub ty: Type,
     pub class: Class,
 }
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Resource {
+    pub name: Name,
+    pub ty: Type,
+    pub class: Class,
+    pub ttl: u32,
+    pub data: RData,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct RData(Vec<u8>);
