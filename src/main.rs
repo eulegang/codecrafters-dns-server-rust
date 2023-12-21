@@ -3,6 +3,8 @@
 
 use tokio::net::UdpSocket;
 
+mod fmt;
+
 #[tokio::main]
 async fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -12,15 +14,22 @@ async fn main() {
         .await
         .expect("Failed to bind to address");
 
-    let mut buf = [0; 512];
+    let mut in_buf = [0; 512];
+    let mut out_buf = [0; 512];
 
     loop {
-        match udp_socket.recv_from(&mut buf).await {
+        match udp_socket.recv_from(&mut in_buf).await {
             Ok((size, source)) => {
-                println!("Received {} bytes from {}", size, source);
-                let response = [];
+                eprintln!("Received {} bytes from {}", size, source);
+                let _bytes = &in_buf[0..size];
+
+                let mut header = fmt::Header::default();
+                header.set_query(false);
+
+                let len = header.write_to(&mut out_buf);
+
                 udp_socket
-                    .send_to(&response, source)
+                    .send_to(&out_buf[0..len], source)
                     .await
                     .expect("Failed to send response");
             }
