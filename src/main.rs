@@ -51,6 +51,7 @@ async fn main() {
 
                 header.set_opcode(req_header.opcode());
                 header.set_side(fmt::Side::Response);
+                header.set_recursion_desired(req_header.recursion_desired());
 
                 if req_header.opcode() != 0 {
                     header.set_rcode(4);
