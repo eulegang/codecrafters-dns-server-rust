@@ -13,7 +13,6 @@ fn word(input: &[u8]) -> IResult<&[u8], u16> {
 impl Bincode for Header {
     fn encode(&self, buf: &mut Vec<u8>) {
         buf.extend(self.id.to_be_bytes());
-        buf.extend(self.id.to_be_bytes());
         buf.extend(self.block.to_be_bytes());
         buf.extend(self.qd_count.to_be_bytes());
         buf.extend(self.an_count.to_be_bytes());
