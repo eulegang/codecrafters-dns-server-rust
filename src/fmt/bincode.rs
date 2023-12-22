@@ -21,12 +21,15 @@ impl Bincode for Header {
     }
 
     fn decode(buf: &[u8]) -> nom::IResult<&[u8], Self> {
-        let mut header = nom::sequence::tuple((word, word, word, word, word, word));
-
-        let (input, (id, block, qd_count, an_count, ns_count, ar_count)) = header(buf)?;
+        let (buf, id) = word(buf)?;
+        let (buf, block) = word(buf)?;
+        let (buf, qd_count) = word(buf)?;
+        let (buf, an_count) = word(buf)?;
+        let (buf, ns_count) = word(buf)?;
+        let (buf, ar_count) = word(buf)?;
 
         Ok((
-            input,
+            buf,
             Header {
                 id,
                 block,
@@ -208,5 +211,49 @@ impl Bincode for RData {
         let (buf, data) = take(len)(buf)?;
 
         Ok((buf, RData(data.to_vec())))
+    }
+}
+
+impl Bincode for Packet {
+    fn encode(&self, buf: &mut Vec<u8>) {
+        self.header.encode(buf);
+
+        for q in &self.questions {
+            q.encode(buf);
+        }
+
+        for a in &self.answers {
+            a.encode(buf);
+        }
+    }
+
+    fn decode(buf: &[u8]) -> nom::IResult<&[u8], Self> {
+        let (mut buf, header) = Header::decode(buf)?;
+
+        let mut questions = Vec::new();
+        let mut answers = Vec::new();
+
+        for _ in 0..header.qd_count {
+            let q: Question;
+            (buf, q) = Question::decode(buf)?;
+
+            questions.push(q);
+        }
+
+        for _ in 0..header.an_count {
+            let a: Resource;
+            (buf, a) = Resource::decode(buf)?;
+
+            answers.push(a);
+        }
+
+        Ok((
+            buf,
+            Packet {
+                header,
+                questions,
+                answers,
+            },
+        ))
     }
 }

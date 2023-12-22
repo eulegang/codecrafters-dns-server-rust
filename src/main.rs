@@ -6,6 +6,7 @@ use std::net::Ipv4Addr;
 use tokio::net::UdpSocket;
 
 use fmt::Bincode;
+
 mod fmt;
 
 #[tokio::main]
@@ -26,56 +27,19 @@ async fn main() {
                 eprintln!("Received {} bytes from {}", size, source);
                 let bytes = &in_buf[0..size];
 
-                let Ok((mut body, req_header)) = fmt::Header::decode(bytes) else {
-                    eprintln!("malformed request header");
+                let packet = match fmt::Packet::decode(bytes) {
+                    Ok((_, packet)) => packet,
 
-                    continue 'conn;
-                };
-
-                let mut questions = Vec::new();
-                for _ in 0..req_header.qd_count {
-                    let Ok((b, q)) = fmt::Question::decode(body) else {
-                        eprintln!("malformed question");
+                    Err(e) => {
+                        eprintln!("malformed request header: {e:?}");
 
                         continue 'conn;
-                    };
+                    }
+                };
 
-                    body = b;
-                    questions.push(q);
-                }
+                let packet = transform(packet);
 
-                let mut header = fmt::Header::default();
-                header.id = req_header.id;
-                header.qd_count = req_header.qd_count;
-                header.an_count = 1;
-
-                header.set_opcode(req_header.opcode());
-                header.set_side(fmt::Side::Response);
-                header.set_recursion_desired(req_header.recursion_desired());
-
-                if req_header.opcode() != 0 {
-                    header.set_rcode(4);
-                }
-
-                header.encode(&mut out_buf);
-
-                let mut answers = Vec::new();
-
-                for q in questions {
-                    q.encode(&mut out_buf);
-
-                    answers.push(fmt::Resource {
-                        name: q.name.clone(),
-                        ty: q.ty,
-                        class: q.class,
-                        ttl: 60,
-                        data: Ipv4Addr::from([8, 8, 8, 8]).into(),
-                    });
-                }
-
-                for a in answers {
-                    a.encode(&mut out_buf);
-                }
+                packet.encode(&mut out_buf);
 
                 udp_socket
                     .send_to(&out_buf, source)
@@ -90,4 +54,28 @@ async fn main() {
             }
         }
     }
+}
+
+fn transform(mut packet: fmt::Packet) -> fmt::Packet {
+    let mut answers = Vec::new();
+    for q in &packet.questions {
+        answers.push(fmt::Resource {
+            name: q.name.clone(),
+            ty: q.ty,
+            class: q.class,
+            ttl: 60,
+            data: fmt::RData::from(Ipv4Addr::from([8, 8, 8, 8])),
+        })
+    }
+
+    packet.header.an_count = answers.len() as u16;
+    packet.answers = answers;
+
+    packet.header.set_side(fmt::Side::Response);
+
+    if packet.header.opcode() != 0 {
+        packet.header.set_rcode(4);
+    }
+
+    packet
 }

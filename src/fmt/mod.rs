@@ -70,3 +70,10 @@ pub struct Resource {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RData(Vec<u8>);
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Packet {
+    pub header: Header,
+    pub questions: Vec<Question>,
+    pub answers: Vec<Resource>,
+}
