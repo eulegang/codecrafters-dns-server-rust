@@ -25,6 +25,7 @@ pub enum Side {
 #[derive(PartialEq, Eq, Clone)]
 pub struct Name {
     name: Vec<Vec<u8>>,
+    offset: Option<u16>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

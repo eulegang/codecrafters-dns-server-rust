@@ -51,7 +51,11 @@ impl Bincode for Name {
             buf.extend(name);
         }
 
-        buf.push(0);
+        if let Some(offset) = self.offset {
+            buf.extend((offset | 0xC000).to_be_bytes());
+        } else {
+            buf.push(0);
+        }
     }
 
     fn decode(mut buf: &[u8]) -> nom::IResult<&[u8], Self> {
@@ -63,7 +67,22 @@ impl Bincode for Name {
             (buf, len) = u8(buf)?;
 
             if len == 0 {
-                return Ok((buf, Name { name }));
+                return Ok((buf, Name { name, offset: None }));
+            }
+
+            if len & 0xC0 == 0xC0 {
+                let (buf, lo) = u8(buf)?;
+                let len = ((len as u16) << 8) | lo as u16;
+
+                let offset = len & !0xC000;
+
+                return Ok((
+                    buf,
+                    Name {
+                        name,
+                        offset: Some(offset),
+                    },
+                ));
             }
 
             (buf, slice) = take(len as usize)(buf)?;
