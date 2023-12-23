@@ -95,3 +95,30 @@ impl From<Ipv4Addr> for RData {
         RData(value.octets().to_vec())
     }
 }
+
+impl Name {
+    pub fn abs(&mut self, packet: &[u8]) {
+        if let Some(offset) = self.offset {
+            let mut offset = offset as usize;
+            self.offset = None;
+
+            loop {
+                let Some(len) = packet.get(offset) else {
+                    return;
+                };
+
+                if *len == 0 {
+                    break;
+                }
+
+                let Some(part) = packet.get(offset + 1..offset + 1 + *len as usize) else {
+                    return;
+                };
+
+                self.name.push(part.to_vec());
+
+                offset += 1 + *len as usize;
+            }
+        }
+    }
+}

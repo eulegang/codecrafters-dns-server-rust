@@ -80,7 +80,8 @@ async fn main() {
 
             let mut obuf = Vec::with_capacity(512);
             let mut ibuf = [0; 512];
-            for q in &packet.questions {
+            for mut q in packet.questions {
+                q.name.abs(bytes);
                 proto.header.id = FORWARD_ID.fetch_add(1, Ordering::SeqCst);
                 proto.questions = vec![q.clone()];
                 proto.header.qd_count = 1;
