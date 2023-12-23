@@ -10,7 +10,7 @@ use fmt::Bincode;
 
 mod fmt;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 struct Cli {
     #[clap(long)]
     resolver: Option<SocketAddrV4>,
@@ -22,6 +22,7 @@ async fn main() {
     println!("Logs from your program will appear here!");
 
     let cli = Cli::parse();
+    eprintln!("Cli: {cli:?}");
 
     let udp_socket = UdpSocket::bind("127.0.0.1:2053")
         .await
