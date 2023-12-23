@@ -1,7 +1,10 @@
 // Uncomment this block to pass the first stage
 // use std::net::UdpSocket;
 
-use std::net::{Ipv4Addr, SocketAddrV4};
+use std::{
+    net::{Ipv4Addr, SocketAddrV4},
+    sync::atomic::{AtomicU16, Ordering},
+};
 
 use clap::Parser;
 use tokio::net::UdpSocket;
@@ -15,6 +18,8 @@ struct Cli {
     #[clap(long)]
     resolver: Option<SocketAddrV4>,
 }
+
+const FORWARD_ID: AtomicU16 = AtomicU16::new(0);
 
 #[tokio::main]
 async fn main() {
@@ -65,34 +70,50 @@ async fn main() {
         };
 
         if let Some(ref forwarder) = forwarder {
-            let mut len = 0;
+            let mut proto = packet.clone();
+            let mut res = packet.clone();
 
-            while len < bytes.len() {
-                let Ok(i) = forwarder.send(&bytes[len..]).await else {
-                    continue 'conn;
-                };
-                len += i;
+            res.header.set_side(fmt::Side::Response);
+            if res.header.opcode() != 0 {
+                res.header.set_rcode(4);
             }
 
-            let Ok(_) = forwarder.recv_buf(&mut out_buf).await else {
-                continue 'conn;
-            };
+            let mut obuf = Vec::with_capacity(512);
+            let mut ibuf = [0; 512];
+            for q in &packet.questions {
+                proto.header.id = FORWARD_ID.fetch_add(1, Ordering::SeqCst);
+                proto.questions = vec![q.clone()];
+                proto.header.qd_count = 1;
 
-            udp_socket
-                .send_to(&out_buf, source)
-                .await
-                .expect("Failed to send response");
+                proto.encode(&mut obuf);
+
+                forwarder.send(&obuf).await.expect("failed to send forward");
+                let len = forwarder
+                    .recv(&mut ibuf)
+                    .await
+                    .expect("failed to recv forward");
+
+                obuf.clear();
+
+                let Ok((_, ans)) = fmt::Packet::decode(&ibuf[0..len]) else {
+                    continue 'conn;
+                };
+
+                res.answers.extend(ans.answers);
+            }
+
+            res.header.an_count = res.answers.len() as u16;
+
+            res.encode(&mut out_buf);
         } else {
             let packet = transform(packet);
-
             packet.encode(&mut out_buf);
-
-            udp_socket
-                .send_to(&out_buf, source)
-                .await
-                .expect("Failed to send response");
         }
 
+        udp_socket
+            .send_to(&out_buf, source)
+            .await
+            .expect("Failed to send response");
         out_buf.clear();
     }
 }
